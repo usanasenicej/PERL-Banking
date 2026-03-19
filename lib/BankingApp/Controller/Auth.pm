@@ -51,4 +51,15 @@ sub login ($self) {
   }
 }
 
+sub me ($self) {
+  my $user_id = $self->stash('user_id');
+  my $user = $self->users->get_by_id($user_id);
+  
+  if ($user) {
+    $self->render(json => { profile => $user });
+  } else {
+    $self->render(json => { error => 'User profile not found' }, status => 404);
+  }
+}
+
 1;

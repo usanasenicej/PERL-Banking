@@ -57,6 +57,9 @@ sub startup ($self) {
     return 1;
   });
 
+  # Authenticated Profile Route
+  $api->get('/auth/me')->to('Auth#me');
+
   # Account Scoped Routes
   $api->get('/accounts')->to('Account#list_accounts');
   $api->post('/accounts')->to('Account#create_account');

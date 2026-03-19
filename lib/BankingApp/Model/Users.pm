@@ -19,4 +19,9 @@ sub verify ($self, $username) {
   return $db->select('users', ['id', 'password_hash'], {username => $username})->hash;
 }
 
+sub get_by_id ($self, $user_id) {
+  my $db = $self->sqlite->db;
+  return $db->select('users', ['id', 'username', 'email', 'created_at'], {id => $user_id})->hash;
+}
+
 1;

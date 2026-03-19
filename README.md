@@ -58,6 +58,7 @@ morbo script/banking_app
 
 | Method | Endpoint | Description | JSON Body Example |
 | :--- | :--- | :--- | :--- |
+| `GET` | `/api/auth/me` | Fetch your user profile details | *-* |
 | `POST` | `/api/accounts` | Create checking/savings | `{"account_type": "checking"}` |
 | `GET` | `/api/accounts` | List your active accounts | *-* |
 | `GET` | `/api/accounts/:id` | View account balance | *-* |
