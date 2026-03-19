@@ -30,3 +30,16 @@ CREATE TABLE transactions (
 DROP TABLE transactions;
 DROP TABLE accounts;
 DROP TABLE users;
+
+-- 2 up
+CREATE TABLE loans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  amount DECIMAL(15,2) NOT NULL,
+  interest_rate DECIMAL(5,2) NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2 down
+DROP TABLE loans;

@@ -5,6 +5,7 @@ use Mojo::SQLite;
 use BankingApp::Model::Users;
 use BankingApp::Model::Accounts;
 use BankingApp::Model::Transactions;
+use BankingApp::Model::Loans;
 
 sub startup ($self) {
   # Load configuration
@@ -21,6 +22,7 @@ sub startup ($self) {
   $self->helper(users => sub ($c) { state $users = BankingApp::Model::Users->new(sqlite => $c->sqlite) });
   $self->helper(accounts => sub ($c) { state $accounts = BankingApp::Model::Accounts->new(sqlite => $c->sqlite) });
   $self->helper(transactions => sub ($c) { state $tx = BankingApp::Model::Transactions->new(sqlite => $c->sqlite) });
+  $self->helper(loans => sub ($c) { state $loans = BankingApp::Model::Loans->new(sqlite => $c->sqlite) });
 
   $self->helper(jwt_secret => sub { $config->{jwt_secret} });
 
@@ -65,6 +67,10 @@ sub startup ($self) {
   $api->post('/transactions/withdraw')->to('Transaction#withdraw');
   $api->post('/transactions/transfer')->to('Transaction#transfer');
   $api->get('/accounts/:account_id/transactions')->to('Transaction#history');
+
+  # Loan Logic Routes
+  $api->post('/loans/apply')->to('Loan#apply');
+  $api->get('/loans')->to('Loan#list');
 }
 
 1;

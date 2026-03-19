@@ -63,8 +63,9 @@ morbo script/banking_app
 | `GET` | `/api/accounts/:id` | View account balance | *-* |
 | `POST` | `/api/transactions/deposit` | Add funds | `{"account_id": 1, "amount": 500}` |
 | `POST` | `/api/transactions/withdraw` | Take out cash | `{"account_id": 1, "amount": 100}` |
-| `POST` | `/api/transactions/transfer` | Wire money instantly | `{"from_account_id": 1, "to_account_id": 2, "amount": 50}` |
 | `GET` | `/api/accounts/:id/transactions` | Read the full ledger | *-* |
+| `POST` | `/api/loans/apply` | Apply for a new bank loan | `{"amount": 50000}` |
+| `GET` | `/api/loans` | View your pending loans | *-* |
 
 ---
 
