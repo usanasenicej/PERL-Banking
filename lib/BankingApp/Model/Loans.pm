@@ -1,25 +1,54 @@
 package BankingApp::Model::Loans;
 use Mojo::Base -base, -signatures;
+use Carp qw(croak);
 
 has 'sqlite';
 
+# Configuration constants
+use constant {
+    DEFAULT_INTEREST_RATE => 5.50,
+    STATUS_PENDING        => 'pending',
+};
+
 sub apply_for_loan ($self, $user_id, $amount) {
-  my $db = $self->sqlite->db;
-  
-  # The global flat bank interest rate is set at 5.5%
-  my $interest_rate = 5.50; 
-  
-  return $db->insert('loans', {
-    user_id => $user_id,
-    amount => $amount,
-    interest_rate => $interest_rate,
-    status => 'pending'
-  })->last_insert_id;
+
+    # Validation
+    croak "User ID is required"
+        unless defined $user_id;
+
+    croak "Loan amount must be greater than zero"
+        unless defined $amount
+        && $amount =~ /^\d+(?:\.\d+)?$/
+        && $amount > 0;
+
+    my $db = $self->sqlite->db;
+
+    my $loan = {
+        user_id       => $user_id,
+        amount        => $amount,
+        interest_rate => DEFAULT_INTEREST_RATE,
+        status        => STATUS_PENDING,
+    };
+
+    my $tx = eval { $db->insert('loans', $loan) };
+
+    croak "Failed to create loan: $@" if $@;
+
+    return $tx->last_insert_id;
 }
 
 sub get_all_for_user ($self, $user_id) {
-  my $db = $self->sqlite->db;
-  return $db->select('loans', '*', {user_id => $user_id})->hashes->to_array;
+
+    croak "User ID is required"
+        unless defined $user_id;
+
+    my $db = $self->sqlite->db;
+
+    return $db->select(
+        'loans',
+        '*',
+        { user_id => $user_id }
+    )->hashes->to_array;
 }
 
 1;
