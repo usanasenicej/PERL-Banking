@@ -12,13 +12,19 @@ sub deposit ($self) {
     return $self->render(json => { error => 'Invalid deposit parameters' }, status => 400);
   }
 
-  my $acc = $self->accounts->get_by_id_and_user($acc_id, $user_id);
-  if (!$acc) {
-    return $self->render(json => { error => 'Invalid account' }, status => 403);
-  }
+  eval {
+    my $acc = $self->accounts->get_by_id_and_user($acc_id, $user_id);
+    if (!$acc) {
+      return $self->render(json => { error => 'Invalid account' }, status => 403);
+    }
 
-  my $tx_id = $self->transactions->deposit($acc_id, $amount);
-  $self->render(json => { message => 'Deposit successful', transaction_id => $tx_id });
+    my $tx_id = $self->transactions->deposit($acc_id, $amount);
+    $self->render(json => { message => 'Deposit successful', transaction_id => $tx_id });
+  };
+  if ($@) {
+    $self->app->log->error($@);
+    $self->render(json => { error => 'Internal server error' }, status => 500);
+  }
 }
 
 sub withdraw ($self) {
@@ -32,16 +38,22 @@ sub withdraw ($self) {
     return $self->render(json => { error => 'Invalid withdraw parameters' }, status => 400);
   }
 
-  my $acc = $self->accounts->get_by_id_and_user($acc_id, $user_id);
-  if (!$acc) {
-    return $self->render(json => { error => 'Invalid account' }, status => 403);
-  }
+  eval {
+    my $acc = $self->accounts->get_by_id_and_user($acc_id, $user_id);
+    if (!$acc) {
+      return $self->render(json => { error => 'Invalid account' }, status => 403);
+    }
 
-  my $tx_id = $self->transactions->withdraw($acc_id, $amount);
-  if ($tx_id) {
-    $self->render(json => { message => 'Withdrawal successful', transaction_id => $tx_id });
-  } else {
-    $self->render(json => { error => 'Insufficient funds' }, status => 400);
+    my $tx_id = $self->transactions->withdraw($acc_id, $amount);
+    if ($tx_id) {
+      $self->render(json => { message => 'Withdrawal successful', transaction_id => $tx_id });
+    } else {
+      $self->render(json => { error => 'Insufficient funds or account issue' }, status => 400);
+    }
+  };
+  if ($@) {
+    $self->app->log->error($@);
+    $self->render(json => { error => 'Internal server error' }, status => 500);
   }
 }
 
@@ -61,21 +73,27 @@ sub transfer ($self) {
     return $self->render(json => { error => 'Cannot transfer to identical account' }, status => 400);
   }
 
-  my $acc = $self->accounts->get_by_id_and_user($from_id, $user_id);
-  if (!$acc) {
-    return $self->render(json => { error => 'Invalid source account' }, status => 403);
-  }
-  
-  my $dest_acc = $self->accounts->get_by_id($to_id);
-  if (!$dest_acc) {
-    return $self->render(json => { error => 'Invalid destination account' }, status => 404);
-  }
+  eval {
+    my $acc = $self->accounts->get_by_id_and_user($from_id, $user_id);
+    if (!$acc) {
+      return $self->render(json => { error => 'Invalid source account' }, status => 403);
+    }
+    
+    my $dest_acc = $self->accounts->get_by_id($to_id);
+    if (!$dest_acc) {
+      return $self->render(json => { error => 'Invalid destination account' }, status => 404);
+    }
 
-  my $tx_id = $self->transactions->transfer($from_id, $to_id, $amount);
-  if ($tx_id) {
-    $self->render(json => { message => 'Transfer successful', transaction_id => $tx_id });
-  } else {
-    $self->render(json => { error => 'Insufficient funds' }, status => 400);
+    my $tx_id = $self->transactions->transfer($from_id, $to_id, $amount);
+    if ($tx_id) {
+      $self->render(json => { message => 'Transfer successful', transaction_id => $tx_id });
+    } else {
+      $self->render(json => { error => 'Insufficient funds or account issue' }, status => 400);
+    }
+  };
+  if ($@) {
+    $self->app->log->error($@);
+    $self->render(json => { error => 'Internal server error' }, status => 500);
   }
 }
 
