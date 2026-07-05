@@ -23,12 +23,11 @@ sub withdraw ($self, $account_id, $amount) {
   my $db = $self->sqlite->db;
   my $tx = $db->begin;
   
-  my $acc = $db->select('accounts', ['balance'], {id => $account_id})->hash;
-  if (!$acc || $acc->{balance} < $amount) {
+  my $res = $db->query('UPDATE accounts SET balance = balance - ? WHERE id = ? AND balance >= ?', $amount, $account_id, $amount);
+  
+  if ($res->rows == 0) {
     return undef;
   }
-  
-  $db->query('UPDATE accounts SET balance = balance - ? WHERE id = ?', $amount, $account_id);
   
   my $tx_id = $db->insert('transactions', {
     from_account_id => $account_id,
@@ -44,12 +43,11 @@ sub transfer ($self, $from_account_id, $to_account_id, $amount) {
   my $db = $self->sqlite->db;
   my $tx = $db->begin;
   
-  my $acc = $db->select('accounts', ['balance'], {id => $from_account_id})->hash;
-  if (!$acc || $acc->{balance} < $amount) {
+  my $res = $db->query('UPDATE accounts SET balance = balance - ? WHERE id = ? AND balance >= ?', $amount, $from_account_id, $amount);
+  if ($res->rows == 0) {
     return undef;
   }
   
-  $db->query('UPDATE accounts SET balance = balance - ? WHERE id = ?', $amount, $from_account_id);
   $db->query('UPDATE accounts SET balance = balance + ? WHERE id = ?', $amount, $to_account_id);
   
   my $tx_id = $db->insert('transactions', {
