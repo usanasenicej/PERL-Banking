@@ -30,4 +30,9 @@ sub get_by_id ($self, $account_id) {
   return $db->select('accounts', '*', {id => $account_id})->hash;
 }
 
+sub delete ($self, $account_id) {
+  my $db = $self->sqlite->db;
+  return $db->delete('accounts', {id => $account_id})->rows;
+}
+
 1;

@@ -98,6 +98,30 @@ sub get_account ($self) {
     return _server_error($self, $@) if $@;
 }
 
+# DELETE /accounts/:account_id
+sub delete_account ($self) {
+    my $user_id = $self->stash('user_id');
+    my $acc_id  = $self->param('account_id');
+
+    unless (defined $acc_id && $acc_id =~ /^\d+$/) {
+        return $self->render(status => 400, json => { success => Mojo::JSON->false, error => 'Invalid account ID' });
+    }
+
+    eval {
+        my $account = $self->accounts->get_by_id_and_user($acc_id, $user_id);
+        unless ($account) {
+            return $self->render(status => 404, json => { success => Mojo::JSON->false, error => 'Account not found' });
+        }
+        if ($account->{balance} > 0) {
+            return $self->render(status => 400, json => { success => Mojo::JSON->false, error => 'Cannot delete account with positive balance' });
+        }
+        $self->accounts->delete($acc_id);
+        return $self->render(status => 200, json => { success => Mojo::JSON->true, message => 'Account deleted successfully' });
+    };
+
+    return _server_error($self, $@) if $@;
+}
+
 # ----------------------------------------------------
 # Private helper
 # ----------------------------------------------------
