@@ -10,6 +10,10 @@ sub register ($self) {
       return $self->render(json => { error => 'Missing username, password or email' }, status => 400);
   }
 
+  if (length($json->{password}) < 8 || $json->{password} !~ /\d/) {
+      return $self->render(json => { error => 'Password must be at least 8 characters long and contain a number' }, status => 400);
+  }
+
   my $salt = join('', map { chr(rand(256)) } 1..16);
   my $hash = bcrypt_hash({ key_nul => 1, cost => 8, salt => $salt }, $json->{password});
   
