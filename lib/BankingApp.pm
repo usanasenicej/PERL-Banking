@@ -64,6 +64,7 @@ sub startup ($self) {
   $api->get('/accounts')->to('Account#list_accounts');
   $api->post('/accounts')->to('Account#create_account');
   $api->get('/accounts/:account_id')->to('Account#get_account');
+  $api->delete('/accounts/:account_id')->to('Account#delete_account');
 
   # Transactional Logic Routes
   $api->post('/transactions/deposit')->to('Transaction#deposit');
