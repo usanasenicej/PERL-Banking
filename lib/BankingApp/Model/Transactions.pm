@@ -43,7 +43,10 @@ sub transfer ($self, $from_account_id, $to_account_id, $amount) {
   my $db = $self->sqlite->db;
   my $tx = $db->begin;
   
-  my $res = $db->query('UPDATE accounts SET balance = balance - ? WHERE id = ? AND balance >= ?', $amount, $from_account_id, $amount);
+  my $fee = 1.00;
+  my $total_deduction = $amount + $fee;
+  
+  my $res = $db->query('UPDATE accounts SET balance = balance - ? WHERE id = ? AND balance >= ?', $total_deduction, $from_account_id, $total_deduction);
   if ($res->rows == 0) {
     return undef;
   }
