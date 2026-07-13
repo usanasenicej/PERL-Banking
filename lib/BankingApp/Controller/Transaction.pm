@@ -86,7 +86,7 @@ sub transfer ($self) {
 
     my $tx_id = $self->transactions->transfer($from_id, $to_id, $amount);
     if ($tx_id) {
-      $self->render(json => { message => 'Transfer successful', transaction_id => $tx_id });
+      $self->render(json => { message => 'Transfer successful (1.00 fee applied)', transaction_id => $tx_id });
     } else {
       $self->render(json => { error => 'Insufficient funds or account issue' }, status => 400);
     }
