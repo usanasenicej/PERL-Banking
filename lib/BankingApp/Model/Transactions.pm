@@ -75,3 +75,6 @@ sub history ($self, $account_id) {
 }
 
 1;
+
+sub get_recent (, =10) { return ->{sqlite}->db->query('SELECT * FROM transactions ORDER BY created_at DESC LIMIT ?', )->hashes->to_array; }
+
