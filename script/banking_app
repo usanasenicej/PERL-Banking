@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use strict;
+use feature 'say';
 use warnings;
 use FindBin;
 BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
