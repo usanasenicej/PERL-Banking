@@ -111,3 +111,5 @@ sub history ($self) {
 }
 
 1;
+
+# End of Transaction Controller - enhanced with security checks
