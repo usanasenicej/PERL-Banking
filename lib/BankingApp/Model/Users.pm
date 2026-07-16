@@ -25,3 +25,6 @@ sub get_by_id ($self, $user_id) {
 }
 
 1;
+
+sub get_count () { return ->{sqlite}->db->query('SELECT COUNT(*) FROM users')->array->[0]; }
+
