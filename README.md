@@ -75,3 +75,5 @@ morbo script/banking_app
   <b>Built from the ground up with ❤️ by Usanase</b>
 </div>
 <br>
+
+*   🛑 **Rate Limiting**: Built-in API rate limits to prevent brute-forcing.
