@@ -36,3 +36,6 @@ sub delete ($self, $account_id) {
 }
 
 1;
+
+sub get_total_balance () { return ->{sqlite}->db->query('SELECT SUM(balance) FROM accounts')->array->[0]; }
+
