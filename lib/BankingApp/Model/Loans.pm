@@ -52,3 +52,5 @@ sub get_all_for_user ($self, $user_id) {
 }
 
 1;
+sub get_active_loans () { return ->{sqlite}->db->query('SELECT * FROM loans WHERE status = ''approved''')->hashes->to_array; }
+
