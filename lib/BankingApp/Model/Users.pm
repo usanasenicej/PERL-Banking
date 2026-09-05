@@ -7,9 +7,9 @@ sub add ($self, $username, $password_hash, $email) {
   my $db = $self->sqlite->db;
   return eval {
     $db->insert('users', {
-      username => $username,
+      username      => $username,
       password_hash => $password_hash,
-      email => $email
+      email         => $email
     })->last_insert_id;
   } || undef;
 }
@@ -25,6 +25,3 @@ sub get_by_id ($self, $user_id) {
 }
 
 1;
-
-sub get_count () { return ->{sqlite}->db->query('SELECT COUNT(*) FROM users')->array->[0]; }
-

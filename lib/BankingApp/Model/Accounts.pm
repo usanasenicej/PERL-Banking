@@ -5,13 +5,25 @@ has 'sqlite';
 
 sub create ($self, $user_id, $type) {
   my $db = $self->sqlite->db;
-  my $acc_num = sprintf("%010d", int(rand(9999999999)));
-  
+
+  # Retry loop to avoid account number collisions
+  my $acc_num;
+  my $attempts = 0;
+  while ($attempts++ < 10) {
+    my $candidate = sprintf("%010d", int(rand(9999999999)));
+    my $existing = $db->select('accounts', ['id'], {account_number => $candidate})->hash;
+    unless ($existing) {
+      $acc_num = $candidate;
+      last;
+    }
+  }
+  die "Could not generate a unique account number after 10 attempts\n" unless $acc_num;
+
   return $db->insert('accounts', {
-    user_id => $user_id,
+    user_id        => $user_id,
     account_number => $acc_num,
-    account_type => $type,
-    balance => 0.00
+    account_type   => $type,
+    balance        => 0.00
   })->last_insert_id;
 }
 
@@ -36,6 +48,3 @@ sub delete ($self, $account_id) {
 }
 
 1;
-
-sub get_total_balance () { return ->{sqlite}->db->query('SELECT SUM(balance) FROM accounts')->array->[0]; }
-
