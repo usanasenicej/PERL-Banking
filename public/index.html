@@ -26,9 +26,9 @@
                 </form>
 
                 <form id="register-form" class="auth-form">
-                    <input type="text" id="reg-username" placeholder="Username" required>
+                    <input type="text" id="reg-username" placeholder="Username (3–32 characters)" required>
                     <input type="email" id="reg-email" placeholder="Email" required>
-                    <input type="password" id="reg-password" placeholder="Password" required>
+                    <input type="password" id="reg-password" placeholder="Password (min. 8 chars, include a number)" required>
                     <button type="submit" class="primary-btn">Create Account</button>
                     <div class="error-msg" id="reg-error"></div>
                 </form>
@@ -81,6 +81,7 @@
                 <option value="checking">Checking</option>
                 <option value="savings">Savings</option>
             </select>
+            <div class="error-msg" id="create-account-error"></div>
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeModal('create-account-modal')">Cancel</button>
                 <button class="primary-btn" onclick="createAccount()">Open</button>
@@ -92,7 +93,8 @@
         <div class="modal-content">
             <h3>Deposit Funds</h3>
             <select id="deposit-account" class="account-dropdown"></select>
-            <input type="number" id="deposit-amount" placeholder="Amount" step="0.01">
+            <input type="number" id="deposit-amount" placeholder="Amount (e.g. 100.00)" step="0.01" min="0.01">
+            <div class="error-msg" id="deposit-error"></div>
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeModal('deposit-modal')">Cancel</button>
                 <button class="primary-btn" onclick="submitDeposit()">Confirm</button>
@@ -104,7 +106,8 @@
         <div class="modal-content">
             <h3>Withdraw Funds</h3>
             <select id="withdraw-account" class="account-dropdown"></select>
-            <input type="number" id="withdraw-amount" placeholder="Amount" step="0.01">
+            <input type="number" id="withdraw-amount" placeholder="Amount (e.g. 50.00)" step="0.01" min="0.01">
+            <div class="error-msg" id="withdraw-error"></div>
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeModal('withdraw-modal')">Cancel</button>
                 <button class="primary-btn" onclick="submitWithdraw()">Confirm</button>
@@ -115,9 +118,13 @@
     <div id="transfer-modal" class="modal">
         <div class="modal-content">
             <h3>Transfer Funds</h3>
+            <label style="font-size:0.85rem; color: var(--text-muted); margin-bottom: 4px; display:block;">From account</label>
             <select id="transfer-from" class="account-dropdown"></select>
-            <input type="number" id="transfer-to" placeholder="Destination Account ID">
-            <input type="number" id="transfer-amount" placeholder="Amount" step="0.01">
+            <label style="font-size:0.85rem; color: var(--text-muted); margin: 8px 0 4px; display:block;">Destination account ID <span style="opacity:0.6">(any account in the bank)</span></label>
+            <input type="number" id="transfer-to" placeholder="Destination Account ID" min="1" step="1">
+            <input type="number" id="transfer-amount" placeholder="Amount (e.g. 200.00)" step="0.01" min="0.01">
+            <p style="font-size:0.8rem; color: var(--text-muted); margin-top: 4px;">⚠️ A $1.00 transfer fee will be deducted from the source account.</p>
+            <div class="error-msg" id="transfer-error"></div>
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeModal('transfer-modal')">Cancel</button>
                 <button class="primary-btn" onclick="submitTransfer()">Transfer</button>
@@ -128,7 +135,9 @@
     <div id="loan-modal" class="modal">
         <div class="modal-content">
             <h3>Apply for a Loan</h3>
-            <input type="number" id="loan-amount" placeholder="Amount" step="0.01">
+            <p style="font-size:0.85rem; color: var(--text-muted); margin-bottom: 8px;">Min: $100 · Max: $1,000,000 · Rate: 5.5%</p>
+            <input type="number" id="loan-amount" placeholder="Amount (e.g. 5000.00)" step="0.01" min="100">
+            <div class="error-msg" id="loan-error"></div>
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeModal('loan-modal')">Cancel</button>
                 <button class="primary-btn" onclick="submitLoan()">Apply</button>
