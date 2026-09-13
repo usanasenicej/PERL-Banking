@@ -43,4 +43,51 @@ sub list ($self) {
   }
 }
 
+# GET /loans/:loan_id
+sub get_loan ($self) {
+  my $user_id = $self->stash('user_id');
+  my $loan_id = $self->param('loan_id');
+
+  unless (defined $loan_id && $loan_id =~ /^\d+$/) {
+    return $self->render(json => { success => false, error => 'Invalid loan ID' }, status => 400);
+  }
+
+  eval {
+    my $loan = $self->loans->get_by_id_and_user($loan_id, $user_id);
+    unless ($loan) {
+      return $self->render(json => { success => false, error => 'Loan not found' }, status => 404);
+    }
+    $self->render(json => { success => true, loan => $loan });
+  };
+  if ($@) {
+    $self->app->log->error($@);
+    $self->render(json => { success => false, error => 'Internal server error' }, status => 500);
+  }
+}
+
+# POST /loans/:loan_id/repay
+sub repay ($self) {
+  my $user_id = $self->stash('user_id');
+  my $loan_id = $self->param('loan_id');
+
+  unless (defined $loan_id && $loan_id =~ /^\d+$/) {
+    return $self->render(json => { success => false, error => 'Invalid loan ID' }, status => 400);
+  }
+
+  eval {
+    $self->loans->repay($loan_id, $user_id);
+    $self->render(json => { success => true, message => 'Loan marked as repaid' });
+  };
+  if ($@) {
+    if ($@ =~ /already repaid/) {
+      return $self->render(json => { success => false, error => 'Loan is already repaid' }, status => 409);
+    }
+    if ($@ =~ /not found/) {
+      return $self->render(json => { success => false, error => 'Loan not found' }, status => 404);
+    }
+    $self->app->log->error($@);
+    $self->render(json => { success => false, error => 'Internal server error' }, status => 500);
+  }
+}
+
 1;
