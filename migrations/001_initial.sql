@@ -43,3 +43,11 @@ CREATE TABLE loans (
 
 -- 2 down
 DROP TABLE loans;
+
+-- 3 up
+ALTER TABLE transactions ADD COLUMN description TEXT DEFAULT NULL;
+ALTER TABLE loans ADD COLUMN term_months INTEGER DEFAULT 12;
+ALTER TABLE loans ADD COLUMN repaid_at DATETIME DEFAULT NULL;
+
+-- 3 down
+-- SQLite does not support DROP COLUMN; migration is intentionally non-reversible
