@@ -48,8 +48,35 @@ sub get_all_for_user ($self, $user_id) {
     return $db->select(
         'loans',
         '*',
-        { user_id => $user_id }
+        { user_id => $user_id },
+        { order_by => { -desc => 'created_at' } }
     )->hashes->to_array;
+}
+
+sub get_by_id_and_user ($self, $loan_id, $user_id) {
+    croak "Loan ID and User ID are required"
+        unless defined $loan_id && defined $user_id;
+
+    my $db = $self->sqlite->db;
+    return $db->select('loans', '*', { id => $loan_id, user_id => $user_id })->hash;
+}
+
+sub repay ($self, $loan_id, $user_id) {
+    croak "Loan ID and User ID are required"
+        unless defined $loan_id && defined $user_id;
+
+    my $db = $self->sqlite->db;
+
+    # Only allow repayment of pending/approved loans
+    my $loan = $db->select('loans', '*', { id => $loan_id, user_id => $user_id })->hash;
+    croak "Loan not found" unless $loan;
+    croak "Loan is already repaid" if $loan->{status} eq 'repaid';
+
+    $db->update('loans',
+        { status => 'repaid', repaid_at => \"CURRENT_TIMESTAMP" },
+        { id => $loan_id, user_id => $user_id }
+    );
+    return 1;
 }
 
 1;
