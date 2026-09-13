@@ -110,6 +110,8 @@ sub transfer ($self) {
 sub history ($self) {
   my $user_id = $self->stash('user_id');
   my $acc_id  = $self->param('account_id');
+  my $page    = $self->param('page')  || 1;
+  my $limit   = $self->param('limit') || 20;
 
   unless (defined $acc_id && $acc_id =~ /^\d+$/) {
     return $self->render(json => { success => false, error => 'Invalid account ID' }, status => 400);
@@ -121,8 +123,37 @@ sub history ($self) {
       return $self->render(json => { success => false, error => 'Account not found or access denied' }, status => 404);
     }
 
-    my $history = $self->transactions->history($acc_id);
-    $self->render(json => { success => true, transactions => $history });
+    my $result = $self->transactions->history($acc_id, $page, $limit);
+    $self->render(json => { success => true, %$result });
+  };
+  if ($@) {
+    $self->app->log->error($@);
+    $self->render(json => { success => false, error => 'Internal server error' }, status => 500);
+  }
+}
+
+# Change 5: GET /accounts/:account_id/summary
+sub summary ($self) {
+  my $user_id = $self->stash('user_id');
+  my $acc_id  = $self->param('account_id');
+
+  unless (defined $acc_id && $acc_id =~ /^\d+$/) {
+    return $self->render(json => { success => false, error => 'Invalid account ID' }, status => 400);
+  }
+
+  eval {
+    my $acc = $self->accounts->get_by_id_and_user($acc_id, $user_id);
+    if (!$acc) {
+      return $self->render(json => { success => false, error => 'Account not found or access denied' }, status => 404);
+    }
+
+    my $stats = $self->transactions->summary($acc_id);
+    $self->render(json => {
+      success => true,
+      account_id => $acc_id + 0,
+      balance    => $acc->{balance} + 0,
+      %$stats
+    });
   };
   if ($@) {
     $self->app->log->error($@);

@@ -14,23 +14,49 @@ sub startup ($self) {
 
   # Connect to SQLite database
   $self->helper(sqlite => sub { state $sql = Mojo::SQLite->new($config->{sqlite_url}) });
-  
+
   # Run DB migrations
   $self->sqlite->migrations->name('banking')->from_file($self->home->child('migrations/001_initial.sql'))->migrate;
 
   # Initialize model layers as helpers for Dependency Injection
-  $self->helper(users => sub ($c) { state $users = BankingApp::Model::Users->new(sqlite => $c->sqlite) });
-  $self->helper(accounts => sub ($c) { state $accounts = BankingApp::Model::Accounts->new(sqlite => $c->sqlite) });
-  $self->helper(transactions => sub ($c) { state $tx = BankingApp::Model::Transactions->new(sqlite => $c->sqlite) });
-  $self->helper(loans => sub ($c) { state $loans = BankingApp::Model::Loans->new(sqlite => $c->sqlite) });
+  $self->helper(users        => sub ($c) { state $users = BankingApp::Model::Users->new(sqlite        => $c->sqlite) });
+  $self->helper(accounts     => sub ($c) { state $accts = BankingApp::Model::Accounts->new(sqlite     => $c->sqlite) });
+  $self->helper(transactions => sub ($c) { state $tx    = BankingApp::Model::Transactions->new(sqlite => $c->sqlite) });
+  $self->helper(loans        => sub ($c) { state $loans = BankingApp::Model::Loans->new(sqlite        => $c->sqlite) });
 
   $self->helper(jwt_secret => sub { $config->{jwt_secret} });
 
+  # Change 1: Per-IP in-memory rate limiter for auth endpoints
+  my %_rate_store;
+  my $RATE_LIMIT  = $config->{rate_limit} // 10;
+  my $RATE_WINDOW = 60;
+
+  $self->helper(check_rate_limit => sub ($c) {
+    my $ip    = $c->tx->remote_address // '0.0.0.0';
+    my $now   = time;
+    my $entry = $_rate_store{$ip} //= { count => 0, reset_at => $now + $RATE_WINDOW };
+    if ($now >= $entry->{reset_at}) {
+      $entry->{count}    = 0;
+      $entry->{reset_at} = $now + $RATE_WINDOW;
+    }
+    $entry->{count}++;
+    return $entry->{count} <= $RATE_LIMIT;
+  });
+
   my $r = $self->routes;
 
+  # Rate-limited public auth pipeline
+  my $auth_public = $r->under('/api/auth' => sub ($c) {
+    unless ($c->check_rate_limit) {
+      $c->render(json => { error => 'Too many requests. Please wait a moment and try again.' }, status => 429);
+      return undef;
+    }
+    return 1;
+  });
+
   # Public Routes (Authentication)
-  $r->post('/api/auth/register')->to('Auth#register');
-  $r->post('/api/auth/login')->to('Auth#login');
+  $auth_public->post('/register')->to('Auth#register');
+  $auth_public->post('/login')->to('Auth#login');
 
   # Protected Route Pipeline
   my $api = $r->under('/api' => sub ($c) {
@@ -39,42 +65,45 @@ sub startup ($self) {
       $c->render(json => { error => 'Missing or invalid Authorization header' }, status => 401);
       return undef;
     }
-    
+
     my $token = $1;
     require Mojo::JWT;
     my $jwt = Mojo::JWT->new(secret => $c->jwt_secret);
-    
+
     my $claims;
     eval { $claims = $jwt->decode($token) };
-    
+
     if ($@ || !$claims) {
       $c->render(json => { error => 'Invalid or expired JWT token' }, status => 401);
       return undef;
     }
-    
-    # Authenticated user is injected into stash context
+
     $c->stash(user_id => $claims->{user_id});
     return 1;
   });
 
-  # Authenticated Profile Route
+  # Authenticated Profile Routes
   $api->get('/auth/me')->to('Auth#me');
+  $api->patch('/auth/me')->to('Auth#update_profile');    # Change 4
 
   # Account Scoped Routes
   $api->get('/accounts')->to('Account#list_accounts');
   $api->post('/accounts')->to('Account#create_account');
   $api->get('/accounts/:account_id')->to('Account#get_account');
   $api->delete('/accounts/:account_id')->to('Account#delete_account');
+  $api->get('/accounts/:account_id/summary')->to('Transaction#summary');  # Change 5
 
   # Transactional Logic Routes
   $api->post('/transactions/deposit')->to('Transaction#deposit');
   $api->post('/transactions/withdraw')->to('Transaction#withdraw');
   $api->post('/transactions/transfer')->to('Transaction#transfer');
-  $api->get('/accounts/:account_id/transactions')->to('Transaction#history');
+  $api->get('/accounts/:account_id/transactions')->to('Transaction#history');  # Change 3: now paginates
 
   # Loan Logic Routes
   $api->post('/loans/apply')->to('Loan#apply');
   $api->get('/loans')->to('Loan#list');
+  $api->get('/loans/:loan_id')->to('Loan#get_loan');    # Change 1: was missing handler
+  $api->post('/loans/:loan_id/repay')->to('Loan#repay');  # Change 6: repayment endpoint
 }
 
 1;
