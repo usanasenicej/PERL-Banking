@@ -160,7 +160,10 @@ async function loadAccounts() {
                         <div class="card-title">${acc.account_type.charAt(0).toUpperCase() + acc.account_type.slice(1)} Account</div>
                         <div class="card-subtitle">ID: ${acc.id} | ACC: ${acc.account_number}</div>
                     </div>
-                    <div class="card-amount">$${parseFloat(acc.balance).toFixed(2)}</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="card-amount">$${parseFloat(acc.balance).toFixed(2)}</div>
+                        <button class="secondary-btn" style="font-size:0.75rem; padding:4px 10px;" onclick="viewHistory(${acc.id}, '${acc.account_type}')">History</button>
+                    </div>
                 </div>
             `;
         });
@@ -180,18 +183,127 @@ async function loadLoans() {
         }
 
         loans.forEach(loan => {
-            const statusColor = loan.status === 'pending' ? 'orange' : 'var(--primary)';
+            const statusColor = loan.status === 'pending' ? 'orange' : loan.status === 'repaid' ? 'var(--success)' : 'var(--primary)';
+            const canRepay    = loan.status !== 'repaid';
             list.innerHTML += `
                 <div class="card" style="border-color: ${statusColor}">
                     <div class="card-details">
-                        <div class="card-title">Personal Loan</div>
-                        <div class="card-subtitle">Status: ${loan.status.toUpperCase()} | Rate: ${loan.interest_rate}%</div>
+                        <div class="card-title">Personal Loan #${loan.id}</div>
+                        <div class="card-subtitle">Status: ${loan.status.toUpperCase()} | Rate: ${loan.interest_rate}% | Term: ${loan.term_months || 12} months</div>
+                        ${loan.repaid_at ? `<div class="card-subtitle" style="color:var(--success)">Repaid: ${new Date(loan.repaid_at).toLocaleDateString()}</div>` : ''}
                     </div>
-                    <div class="card-amount">$${parseFloat(loan.amount).toFixed(2)}</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="card-amount">$${parseFloat(loan.amount).toFixed(2)}</div>
+                        ${canRepay ? `<button class="secondary-btn" style="font-size:0.75rem; padding:4px 10px;" onclick="repayLoan(${loan.id})">Repay</button>` : ''}
+                    </div>
                 </div>
             `;
         });
     } catch (e) { console.error(e); }
+}
+
+// -----------------------------------------------
+// Change 8: Transaction History with Pagination
+// -----------------------------------------------
+let _historyAccId   = null;
+let _historyPage    = 1;
+const _historyLimit = 10;
+
+async function viewHistory(accId, accType) {
+    _historyAccId = accId;
+    _historyPage  = 1;
+    document.getElementById('tx-history-title').innerText = `Transaction History — ${accType.charAt(0).toUpperCase() + accType.slice(1)} Account (ID: ${accId})`;
+    document.getElementById('tx-history-panel').style.display = 'block';
+    document.getElementById('tx-history-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    await _renderHistoryPage();
+}
+
+function closeHistory() {
+    document.getElementById('tx-history-panel').style.display = 'none';
+    _historyAccId = null;
+}
+
+async function _renderHistoryPage() {
+    if (!_historyAccId) return;
+    try {
+        const res = await apiCall(`/accounts/${_historyAccId}/transactions?page=${_historyPage}&limit=${_historyLimit}`);
+        const txs  = res.transactions || [];
+        const list = document.getElementById('tx-history-list');
+        list.innerHTML = '';
+
+        if (txs.length === 0 && _historyPage === 1) {
+            list.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">No transactions yet.</div>';
+        }
+
+        txs.forEach(tx => {
+            const isCredit = tx.to_account_id == _historyAccId && tx.transaction_type !== 'withdrawal';
+            const sign     = isCredit && tx.transaction_type === 'deposit' ? '+' : tx.transaction_type === 'transfer' && tx.to_account_id == _historyAccId ? '+' : '-';
+            const color    = sign === '+' ? 'var(--success)' : '#e55';
+            const date     = new Date(tx.created_at).toLocaleString();
+            list.innerHTML += `
+                <div class="card" style="padding: 10px 14px;">
+                    <div class="card-details">
+                        <div class="card-title" style="font-size:0.9rem;">${tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}</div>
+                        <div class="card-subtitle">${date}${tx.description ? ' · ' + tx.description : ''}</div>
+                    </div>
+                    <div style="color:${color}; font-weight:700;">${sign}$${parseFloat(tx.amount).toFixed(2)}</div>
+                </div>
+            `;
+        });
+
+        // Pagination controls
+        const total = res.total || 0;
+        const pages = Math.ceil(total / _historyLimit) || 1;
+        const pag   = document.getElementById('tx-pagination');
+        pag.innerHTML = `<span style="font-size:0.85rem; color:var(--text-muted);">Page ${_historyPage} of ${pages} (${total} total)</span>`;
+        if (_historyPage > 1) {
+            pag.innerHTML += `<button class="secondary-btn" style="font-size:0.8rem; padding:4px 12px;" onclick="_historyPage--;_renderHistoryPage()">← Prev</button>`;
+        }
+        if (_historyPage < pages) {
+            pag.innerHTML += `<button class="secondary-btn" style="font-size:0.8rem; padding:4px 12px;" onclick="_historyPage++;_renderHistoryPage()">Next →</button>`;
+        }
+    } catch (e) { console.error(e); }
+}
+
+// -----------------------------------------------
+// Change 6: Loan Repayment
+// -----------------------------------------------
+async function repayLoan(loanId) {
+    if (!confirm(`Mark loan #${loanId} as repaid? This cannot be undone.`)) return;
+    try {
+        await apiCall(`/loans/${loanId}/repay`, 'POST');
+        loadLoans();
+    } catch (err) {
+        alert('Repayment failed: ' + err.message);
+    }
+}
+
+// -----------------------------------------------
+// Change 4: Profile Update
+// -----------------------------------------------
+async function submitProfileUpdate() {
+    const email       = document.getElementById('profile-email').value.trim();
+    const currentPass = document.getElementById('profile-current-pass').value;
+    const newPass     = document.getElementById('profile-new-pass').value;
+
+    const body = {};
+    if (email)       body.email            = email;
+    if (newPass)     body.new_password     = newPass;
+    if (currentPass) body.current_password = currentPass;
+
+    try {
+        await apiCall('/auth/me', 'PATCH', body);
+        closeModal('profile-modal');
+        document.getElementById('profile-email').value       = '';
+        document.getElementById('profile-current-pass').value = '';
+        document.getElementById('profile-new-pass').value    = '';
+        // Show success in login error area (reuse existing success style trick)
+        const el = document.getElementById('profile-error');
+        el.innerText    = '';
+        alert('Profile updated successfully!');
+    } catch (err) {
+        showModalError('profile-modal', err.message);
+    }
 }
 
 function populateAccountDropdowns() {

@@ -41,6 +41,7 @@
                 <div class="logo">🏦 Usanase Banking</div>
                 <div class="user-profile">
                     <span id="welcome-msg"></span>
+                    <button onclick="showModal('profile-modal')" class="secondary-btn" style="margin-right:8px;">My Profile</button>
                     <button onclick="logout()" class="logout-btn">Logout</button>
                 </div>
             </nav>
@@ -69,6 +70,16 @@
                         <div id="loans-list" class="card-list"></div>
                     </section>
                 </div>
+
+                <!-- Change 8: Transaction History Panel -->
+                <section class="panel" id="tx-history-panel" style="display:none; margin-top: 1.5rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2 id="tx-history-title">Transaction History</h2>
+                        <button class="secondary-btn" onclick="closeHistory()" style="font-size:0.8rem;">✕ Close</button>
+                    </div>
+                    <div id="tx-history-list" class="card-list"></div>
+                    <div id="tx-pagination" style="display:flex; gap:8px; margin-top:12px; align-items:center; flex-wrap:wrap;"></div>
+                </section>
             </main>
         </div>
     </div>
@@ -141,6 +152,25 @@
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeModal('loan-modal')">Cancel</button>
                 <button class="primary-btn" onclick="submitLoan()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change 4 & 8: Profile Update Modal -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-content">
+            <h3>Update Profile</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;">Leave a field blank to keep it unchanged.</p>
+            <label style="font-size:0.85rem; color:var(--text-muted);">New Email</label>
+            <input type="email" id="profile-email" placeholder="New email address">
+            <label style="font-size:0.85rem; color:var(--text-muted); margin-top:8px; display:block;">Current Password <span style="opacity:0.6">(required to change password)</span></label>
+            <input type="password" id="profile-current-pass" placeholder="Current password">
+            <label style="font-size:0.85rem; color:var(--text-muted); margin-top:8px; display:block;">New Password</label>
+            <input type="password" id="profile-new-pass" placeholder="New password (min. 8 chars, include a number)">
+            <div class="error-msg" id="profile-error"></div>
+            <div class="modal-actions">
+                <button class="secondary-btn" onclick="closeModal('profile-modal')">Cancel</button>
+                <button class="primary-btn" onclick="submitProfileUpdate()">Save Changes</button>
             </div>
         </div>
     </div>

@@ -51,22 +51,28 @@ morbo script/banking_app
 
 | Method | Endpoint | Description | JSON Body Example |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Open a new bank profile | `{"username": "john", "password": "123", "email": "a@a.com"}` |
-| `POST` | `/api/auth/login` | Securely login & get JWT | `{"username": "john", "password": "123"}` |
+| `POST` | `/api/auth/register` | Open a new bank profile | `{"username": "john", "password": "Pass123", "email": "a@a.com"}` |
+| `POST` | `/api/auth/login` | Securely login & get JWT | `{"username": "john", "password": "Pass123"}` |
 
 ### 🔒 Protected Routes (Accounts & Money)
 
-| Method | Endpoint | Description | JSON Body Example |
+| Method | Endpoint | Description | JSON Body / Query Params |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/auth/me` | Fetch your user profile details | *-* |
+| `PATCH` | `/api/auth/me` | **[NEW]** Update email or password | `{"email": "new@a.com"}` or `{"current_password": "old", "new_password": "New456"}` |
 | `POST` | `/api/accounts` | Create checking/savings | `{"account_type": "checking"}` |
 | `GET` | `/api/accounts` | List your active accounts | *-* |
 | `GET` | `/api/accounts/:id` | View account balance | *-* |
+| `DELETE` | `/api/accounts/:id` | Close a zero-balance account | *-* |
+| `GET` | `/api/accounts/:id/summary` | **[NEW]** Financial summary (totals in/out) | *-* |
 | `POST` | `/api/transactions/deposit` | Add funds | `{"account_id": 1, "amount": 500}` |
 | `POST` | `/api/transactions/withdraw` | Take out cash | `{"account_id": 1, "amount": 100}` |
-| `GET` | `/api/accounts/:id/transactions` | Read the full ledger | *-* |
+| `POST` | `/api/transactions/transfer` | Transfer between accounts (+ $1.00 fee) | `{"from_account_id": 1, "to_account_id": 2, "amount": 50}` |
+| `GET` | `/api/accounts/:id/transactions` | **[UPDATED]** Paginated transaction ledger | `?page=1&limit=20` |
 | `POST` | `/api/loans/apply` | Apply for a new bank loan | `{"amount": 50000}` |
-| `GET` | `/api/loans` | View your pending loans | *-* |
+| `GET` | `/api/loans` | View all your loans (newest first) | *-* |
+| `GET` | `/api/loans/:id` | **[FIXED]** Get a single loan by ID | *-* |
+| `POST` | `/api/loans/:id/repay` | **[NEW]** Mark a loan as repaid | *-* |
 
 ---
 
