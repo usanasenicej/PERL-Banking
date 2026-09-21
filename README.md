@@ -3,83 +3,39 @@
 [![Perl](https://img.shields.io/badge/Language-Perl-blue?style=for-the-badge&logo=perl)](https://www.perl.org/)
 [![Mojolicious](https://img.shields.io/badge/Framework-Mojolicious-darkgreen?style=for-the-badge)](https://mojolicious.org/)
 [![Database](https://img.shields.io/badge/Database-SQLite-003B57?style=for-the-badge&logo=sqlite)](https://sqlite.org/)
-[![Security](https://img.shields.io/badge/Security-JWT%20%26%20Bcrypt-red?style=for-the-badge&logo=jsonwebtokens)]()
+[![Security](https://img.shields.io/badge/Security-JWT%20%2B%20Bcrypt-red?style=for-the-badge&logo=jsonwebtokens)]()
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)]()
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)]()
 
-*Welcome to the future of fintech backends! Architected by **Usanase**, this is a hyper-complex, production-ready Banking API. Experience the power of modern Perl matched with scalable MVC architecture!*
+**A production-ready, modern banking core API built with Perl + Mojolicious.**
 
----
-
-## ✨ Features at a Glance
-
-*   🔐 **Bank-Grade Security**: Bulletproof user authentication with **Bcrypt** hashed passwords and **JWT** (JSON Web Tokens) for impenetrable route protection.
-*   💾 **Automated Migrations**: Zero-config database setup. Our SQLite schemas deploy dynamically on boot!
-*   🛡️ **ACID Transactions**: Dual-entry accounting system. Wire transfers use rigid SQL database transactions. Money only moves if it's 100% verified—no lost funds, ever.
-*   🏛️ **Strict MVC Architecture**: Crystal clear logic separation using Controllers and Models mapped with Dependency Injection.
+Architected by **Usanase**. Strict MVC, ACID-compliant dual-entry accounting, JWT authentication, and zero-config SQLite migrations.
 
 ---
 
-## 🛠️ Quick Start Guide
+## ✨ Features
 
-Ready to spin up the bank? Follow these simple steps!
+| Feature | Description |
+|---------|-------------|
+| 🔐 **Bank-grade security** | Bcrypt password hashing + JWT authentication on all protected routes |
+| 💾 **Zero-config database** | SQLite schema is created and migrated automatically on first boot |
+| 🛡️ **ACID transactions** | All money movements (deposit, withdraw, transfer) run inside database transactions |
+| 🏛️ **Clean MVC + DI** | Controllers and Models with clear separation of concerns |
+| 📊 **Account summaries** | Built-in totals for money in / money out |
+| 📄 **Paginated ledgers** | Transaction history with `page` & `limit` support |
+| 🏦 **Loan management** | Apply, view, and repay loans |
+| 🛑 **Rate limiting** | Built-in protection against brute-force attacks |
 
-### 1. 🧰 Install Perl
-Don't have Perl yet? Download and install **[Strawberry Perl](https://strawberryperl.com/)** (Windows). This installs both `perl` and `cpanm` directly into your system.
+---
 
-### 2. 📦 Fetch Dependencies
-Open your terminal in this directory and run:
+## 🛠️ Quick Start
 
-```powershell
+### Prerequisites
+
+- **Perl 5.30+** (recommended: [Strawberry Perl](https://strawberryperl.com/) on Windows)
+- `cpanm` (comes with Strawberry Perl)
+
+### 1. Install dependencies
+
+```bash
 cpanm --installdeps .
-```
-
-### 3. 🚀 Launch the Core
-Boot up the development server with hot-reloading:
-
-```powershell
-morbo script/banking_app
-```
-*The server will instantly deploy on `http://127.0.0.1:3000` and automatically build your `banking.db`.*
-
----
-
-## 📡 API Reference & Endpoints
-
-> **Note:** Protected endpoints require you to pass your token in the headers as: `Authorization: Bearer <your_jwt_token>`
-
-### 🔓 Public Routes (Auth)
-
-| Method | Endpoint | Description | JSON Body Example |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Open a new bank profile | `{"username": "john", "password": "Pass123", "email": "a@a.com"}` |
-| `POST` | `/api/auth/login` | Securely login & get JWT | `{"username": "john", "password": "Pass123"}` |
-
-### 🔒 Protected Routes (Accounts & Money)
-
-| Method | Endpoint | Description | JSON Body / Query Params |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/auth/me` | Fetch your user profile details | *-* |
-| `PATCH` | `/api/auth/me` | **[NEW]** Update email or password | `{"email": "new@a.com"}` or `{"current_password": "old", "new_password": "New456"}` |
-| `POST` | `/api/accounts` | Create checking/savings | `{"account_type": "checking"}` |
-| `GET` | `/api/accounts` | List your active accounts | *-* |
-| `GET` | `/api/accounts/:id` | View account balance | *-* |
-| `DELETE` | `/api/accounts/:id` | Close a zero-balance account | *-* |
-| `GET` | `/api/accounts/:id/summary` | **[NEW]** Financial summary (totals in/out) | *-* |
-| `POST` | `/api/transactions/deposit` | Add funds | `{"account_id": 1, "amount": 500}` |
-| `POST` | `/api/transactions/withdraw` | Take out cash | `{"account_id": 1, "amount": 100}` |
-| `POST` | `/api/transactions/transfer` | Transfer between accounts (+ $1.00 fee) | `{"from_account_id": 1, "to_account_id": 2, "amount": 50}` |
-| `GET` | `/api/accounts/:id/transactions` | **[UPDATED]** Paginated transaction ledger | `?page=1&limit=20` |
-| `POST` | `/api/loans/apply` | Apply for a new bank loan | `{"amount": 50000}` |
-| `GET` | `/api/loans` | View all your loans (newest first) | *-* |
-| `GET` | `/api/loans/:id` | **[FIXED]** Get a single loan by ID | *-* |
-| `POST` | `/api/loans/:id/repay` | **[NEW]** Mark a loan as repaid | *-* |
-
----
-
-<br>
-<div align="center">
-  <b>Built from the ground up with ❤️ by Usanase</b>
-</div>
-<br>
-
-*   🛑 **Rate Limiting**: Built-in API rate limits to prevent brute-forcing.
