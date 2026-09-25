@@ -2,6 +2,7 @@ package BankingApp;
 use Mojo::Base 'Mojolicious', -signatures;
 
 use Mojo::SQLite;
+use Mojo::JWT;
 use BankingApp::Model::Users;
 use BankingApp::Model::Accounts;
 use BankingApp::Model::Transactions;
@@ -26,7 +27,19 @@ sub startup ($self) {
 
   $self->helper(jwt_secret => sub { $config->{jwt_secret} });
 
-  # Change 1: Per-IP in-memory rate limiter for auth endpoints
+  # -------------------------------------------------------
+  # Security headers — applied to every response
+  # -------------------------------------------------------
+  $self->hook(before_dispatch => sub ($c) {
+    $c->res->headers->header('X-Content-Type-Options' => 'nosniff');
+    $c->res->headers->header('X-Frame-Options'        => 'DENY');
+    $c->res->headers->header('X-XSS-Protection'       => '1; mode=block');
+    $c->res->headers->header('Referrer-Policy'         => 'no-referrer');
+  });
+
+  # -------------------------------------------------------
+  # Per-IP in-memory rate limiter (auth endpoints)
+  # -------------------------------------------------------
   my %_rate_store;
   my $RATE_LIMIT  = $config->{rate_limit} // 10;
   my $RATE_WINDOW = 60;
@@ -43,38 +56,30 @@ sub startup ($self) {
     return $entry->{count} <= $RATE_LIMIT;
   });
 
-  my $r = $self->routes;
-
-  # Rate-limited public auth pipeline
-  my $auth_public = $r->under('/api/auth' => sub ($c) {
-    unless ($c->check_rate_limit) {
-      $c->render(json => { error => 'Too many requests. Please wait a moment and try again.' }, status => 429);
-      return undef;
-    }
-    return 1;
-  });
-
-  # Public Routes (Authentication)
-  $auth_public->post('/register')->to('Auth#register');
-  $auth_public->post('/login')->to('Auth#login');
-
-  # Protected Route Pipeline
-  my $api = $r->under('/api' => sub ($c) {
+  # -------------------------------------------------------
+  # JWT authentication helper — used by protected pipelines
+  # -------------------------------------------------------
+  $self->helper(authenticate => sub ($c) {
     my $auth_header = $c->req->headers->authorization;
     unless ($auth_header && $auth_header =~ /^Bearer\s+(.+)$/) {
       $c->render(json => { error => 'Missing or invalid Authorization header' }, status => 401);
       return undef;
     }
 
-    my $token = $1;
-    require Mojo::JWT;
-    my $jwt = Mojo::JWT->new(secret => $c->jwt_secret);
-
+    my $token  = $1;
+    my $jwt    = Mojo::JWT->new(secret => $c->jwt_secret);
     my $claims;
     eval { $claims = $jwt->decode($token) };
 
-    if ($@ || !$claims) {
-      $c->render(json => { error => 'Invalid or expired JWT token' }, status => 401);
+    if ($@) {
+      my $reason = $@ =~ /expir/i ? 'Token has expired' : 'Invalid JWT token';
+      $c->app->log->debug("JWT rejected: $@");
+      $c->render(json => { error => $reason }, status => 401);
+      return undef;
+    }
+
+    unless ($claims) {
+      $c->render(json => { error => 'Invalid or empty JWT claims' }, status => 401);
       return undef;
     }
 
@@ -82,28 +87,50 @@ sub startup ($self) {
     return 1;
   });
 
-  # Authenticated Profile Routes
-  $api->get('/auth/me')->to('Auth#me');
-  $api->patch('/auth/me')->to('Auth#update_profile');    # Change 4
+  my $r = $self->routes;
 
-  # Account Scoped Routes
+  # -------------------------------------------------------
+  # Rate-limited public auth pipeline
+  # -------------------------------------------------------
+  my $public_auth = $r->under('/api/auth' => sub ($c) {
+    unless ($c->check_rate_limit) {
+      $c->render(json => { error => 'Too many requests. Please wait a moment and try again.' }, status => 429);
+      return undef;
+    }
+    return 1;
+  });
+
+  # Public routes (Authentication)
+  $public_auth->post('/register')->to('Auth#register');
+  $public_auth->post('/login')->to('Auth#login');
+
+  # -------------------------------------------------------
+  # Protected route pipeline
+  # -------------------------------------------------------
+  my $api = $r->under('/api' => sub ($c) { $c->authenticate });
+
+  # Profile routes (also rate-limited for the PATCH)
+  $api->get('/auth/me')->to('Auth#me');
+  $api->patch('/auth/me')->to('Auth#update_profile');
+
+  # Account routes
   $api->get('/accounts')->to('Account#list_accounts');
   $api->post('/accounts')->to('Account#create_account');
   $api->get('/accounts/:account_id')->to('Account#get_account');
   $api->delete('/accounts/:account_id')->to('Account#delete_account');
-  $api->get('/accounts/:account_id/summary')->to('Transaction#summary');  # Change 5
+  $api->get('/accounts/:account_id/summary')->to('Transaction#summary');
 
-  # Transactional Logic Routes
+  # Transaction routes
   $api->post('/transactions/deposit')->to('Transaction#deposit');
   $api->post('/transactions/withdraw')->to('Transaction#withdraw');
   $api->post('/transactions/transfer')->to('Transaction#transfer');
-  $api->get('/accounts/:account_id/transactions')->to('Transaction#history');  # Change 3: now paginates
+  $api->get('/accounts/:account_id/transactions')->to('Transaction#history');
 
-  # Loan Logic Routes
+  # Loan routes
   $api->post('/loans/apply')->to('Loan#apply');
   $api->get('/loans')->to('Loan#list');
-  $api->get('/loans/:loan_id')->to('Loan#get_loan');    # Change 1: was missing handler
-  $api->post('/loans/:loan_id/repay')->to('Loan#repay');  # Change 6: repayment endpoint
+  $api->get('/loans/:loan_id')->to('Loan#get_loan');
+  $api->post('/loans/:loan_id/repay')->to('Loan#repay');
 }
 
 1;
