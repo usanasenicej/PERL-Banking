@@ -115,6 +115,9 @@ sub delete_account ($self) {
         if ($account->{balance} > 0) {
             return $self->render(status => 400, json => { success => Mojo::JSON->false, error => 'Cannot delete account with positive balance' });
         }
+        if ($self->accounts->has_outstanding_loans($user_id)) {
+            return $self->render(status => 400, json => { success => Mojo::JSON->false, error => 'Cannot delete account while you have outstanding (non-repaid) loans' });
+        }
         $self->accounts->delete($acc_id);
         return $self->render(status => 200, json => { success => Mojo::JSON->true, message => 'Account deleted successfully' });
     };
