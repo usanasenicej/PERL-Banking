@@ -25,16 +25,18 @@ sub startup ($self) {
   $self->helper(transactions => sub ($c) { state $tx    = BankingApp::Model::Transactions->new(sqlite => $c->sqlite) });
   $self->helper(loans        => sub ($c) { state $loans = BankingApp::Model::Loans->new(sqlite        => $c->sqlite) });
 
-  $self->helper(jwt_secret => sub { $config->{jwt_secret} });
+  $self->helper(jwt_secret     => sub { $config->{jwt_secret} });
+  $self->helper(jwt_expires_in => sub { $config->{jwt_expires_in} // 3600 });
 
   # -------------------------------------------------------
   # Security headers — applied to every response
   # -------------------------------------------------------
   $self->hook(before_dispatch => sub ($c) {
-    $c->res->headers->header('X-Content-Type-Options' => 'nosniff');
-    $c->res->headers->header('X-Frame-Options'        => 'DENY');
-    $c->res->headers->header('X-XSS-Protection'       => '1; mode=block');
-    $c->res->headers->header('Referrer-Policy'         => 'no-referrer');
+    $c->res->headers->header('X-Content-Type-Options'  => 'nosniff');
+    $c->res->headers->header('X-Frame-Options'         => 'DENY');
+    $c->res->headers->header('X-XSS-Protection'        => '1; mode=block');
+    $c->res->headers->header('Referrer-Policy'          => 'no-referrer');
+    $c->res->headers->header('Content-Security-Policy' => "default-src 'self'");
   });
 
   # -------------------------------------------------------
