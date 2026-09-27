@@ -47,4 +47,14 @@ sub delete ($self, $account_id) {
   return $db->delete('accounts', {id => $account_id})->rows;
 }
 
+# Returns true if the user has any loan that is not yet repaid.
+sub has_outstanding_loans ($self, $user_id) {
+  my $db    = $self->sqlite->db;
+  my $count = $db->query(
+    "SELECT COUNT(*) AS cnt FROM loans WHERE user_id = ? AND status != 'repaid'",
+    $user_id
+  )->hash->{cnt};
+  return $count > 0;
+}
+
 1;
