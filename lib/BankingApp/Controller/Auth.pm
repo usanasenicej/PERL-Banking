@@ -35,6 +35,20 @@ sub _verify_password ($stored, $candidate) {
   return $diff == 0 ? 1 : 0;
 }
 
+# Validate a candidate plaintext password against the policy.
+# Returns an error string on failure, or undef on success.
+sub _validate_password ($plaintext) {
+  return 'Password must be at least 8 characters long'
+    if length($plaintext) < 8;
+  return 'Password must contain at least one digit'
+    if $plaintext !~ /\d/;
+  return 'Password must contain at least one uppercase letter'
+    if $plaintext !~ /[A-Z]/;
+  return 'Password must contain at least one special character (!@#$%^&* etc.)'
+    if $plaintext !~ /[^a-zA-Z0-9]/;
+  return undef;
+}
+
 # -------------------------------------------------------
 # Public actions
 # -------------------------------------------------------
@@ -56,9 +70,9 @@ sub register ($self) {
     return $self->render(json => { success => \0, error => 'Invalid email address' }, status => 400);
   }
 
-  # Password: at least 8 chars, must contain a digit
-  if (length($json->{password}) < 8 || $json->{password} !~ /\d/) {
-    return $self->render(json => { success => \0, error => 'Password must be at least 8 characters long and contain a number' }, status => 400);
+  # Password strength validation
+  if (my $err = _validate_password($json->{password})) {
+    return $self->render(json => { success => \0, error => $err }, status => 400);
   }
 
   my $stored_hash = _hash_password($json->{password});
@@ -93,7 +107,7 @@ sub login ($self) {
 
   my $jwt   = Mojo::JWT->new(
     secret => $self->jwt_secret,
-    claims => { user_id => $user->{id}, exp => time + 3600 }
+    claims => { user_id => $user->{id}, exp => time + $self->jwt_expires_in }
   );
   my $token = $jwt->encode;
   $self->render(json => { success => \1, token => $token });
@@ -133,8 +147,8 @@ sub update_profile ($self) {
       return $self->render(json => { success => \0, error => 'current_password is required to change password' }, status => 400);
     }
 
-    if (length($new_pass) < 8 || $new_pass !~ /\d/) {
-      return $self->render(json => { success => \0, error => 'New password must be at least 8 characters and contain a number' }, status => 400);
+    if (my $err = _validate_password($new_pass)) {
+      return $self->render(json => { success => \0, error => $err }, status => 400);
     }
 
     # Fetch current hash directly from DB (get_by_id omits password_hash for safety)
