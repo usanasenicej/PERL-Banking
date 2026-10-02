@@ -7,7 +7,7 @@
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)]()
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)]()
 
-**A production-ready, modern banking core API built with Perl + Mojolicious.**
+**A production-ready, modern banking core API built with Perl and Mojolicious.**
 
 Architected by **Usanase**.
 ---
