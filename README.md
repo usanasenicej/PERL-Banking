@@ -9,8 +9,7 @@
 
 **A production-ready, modern banking core API built with Perl + Mojolicious.**
 
-Architected by **Usanase**. Strict MVC, ACID-compliant dual-entry accounting, JWT authentication, and zero-config SQLite migrations.
-
+Architected by **Usanase**.
 ---
 
 ## ✨ Features
