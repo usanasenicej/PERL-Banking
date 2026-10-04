@@ -36,8 +36,9 @@ sub deposit ($self) {
   my $user_id = $self->stash('user_id');
   my $req     = $self->req->json;
 
-  my $acc_id = $req->{account_id};
-  my $amount = $req->{amount};
+  my $acc_id      = $req->{account_id};
+  my $amount      = $req->{amount};
+  my $description = $req->{description};  # optional free-text note
 
   unless ($acc_id && _valid_amount($amount)) {
     return $self->render(json => { success => false, error => 'Invalid deposit parameters. Amount must be between 0.01 and 1,000,000 with up to 2 decimal places.' }, status => 400);
@@ -49,7 +50,7 @@ sub deposit ($self) {
       return $self->render(json => { success => false, error => 'Account not found or access denied' }, status => 403);
     }
 
-    my $tx_id = $self->transactions->deposit($acc_id, $amount);
+    my $tx_id = $self->transactions->deposit($acc_id, $amount, $description);
     $self->render(json => { success => true, message => 'Deposit successful', transaction_id => $tx_id });
   });
 }
@@ -58,8 +59,9 @@ sub withdraw ($self) {
   my $user_id = $self->stash('user_id');
   my $req     = $self->req->json;
 
-  my $acc_id = $req->{account_id};
-  my $amount = $req->{amount};
+  my $acc_id      = $req->{account_id};
+  my $amount      = $req->{amount};
+  my $description = $req->{description};  # optional free-text note
 
   unless ($acc_id && _valid_amount($amount)) {
     return $self->render(json => { success => false, error => 'Invalid withdrawal parameters. Amount must be between 0.01 and 1,000,000 with up to 2 decimal places.' }, status => 400);
@@ -71,7 +73,7 @@ sub withdraw ($self) {
       return $self->render(json => { success => false, error => 'Account not found or access denied' }, status => 403);
     }
 
-    my $tx_id = $self->transactions->withdraw($acc_id, $amount);
+    my $tx_id = $self->transactions->withdraw($acc_id, $amount, $description);
     if ($tx_id) {
       $self->render(json => { success => true, message => 'Withdrawal successful', transaction_id => $tx_id });
     } else {
