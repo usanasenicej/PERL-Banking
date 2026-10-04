@@ -51,3 +51,9 @@ ALTER TABLE loans ADD COLUMN repaid_at DATETIME DEFAULT NULL;
 
 -- 3 down
 -- SQLite does not support DROP COLUMN; migration is intentionally non-reversible
+
+-- 4 up
+ALTER TABLE users ADD COLUMN full_name TEXT DEFAULT NULL;
+
+-- 4 down
+-- SQLite does not support DROP COLUMN; migration is intentionally non-reversible
