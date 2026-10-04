@@ -38,18 +38,38 @@ sub create_account ($self) {
         );
     }
 
+    # Optional initial deposit — must be a positive amount with up to 2 d.p.
+    my $initial_deposit = $payload->{initial_deposit};
+    if (defined $initial_deposit) {
+        unless ($initial_deposit =~ /^\d+(?:\.\d{1,2})?$/ && $initial_deposit > 0) {
+            return $self->render(
+                status => 400,
+                json   => {
+                    success => Mojo::JSON->false,
+                    error   => 'initial_deposit must be a positive number with up to 2 decimal places'
+                }
+            );
+        }
+    }
+
     eval {
         my $account_id = $self->accounts->create(
             $user_id,
             $type
         );
 
+        # Fund the account immediately if an initial deposit was requested
+        if (defined $initial_deposit) {
+            $self->transactions->deposit($account_id, $initial_deposit);
+        }
+
         return $self->render(
             status => 201,
             json   => {
                 success    => Mojo::JSON->true,
                 message    => 'Account created successfully',
-                account_id => $account_id
+                account_id => $account_id,
+                (defined $initial_deposit ? (initial_deposit => $initial_deposit + 0) : ())
             }
         );
     };
