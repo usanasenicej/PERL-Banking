@@ -38,8 +38,8 @@ sub _verify_password ($stored, $candidate) {
 # Validate a candidate plaintext password against the policy.
 # Returns an error string on failure, or undef on success.
 sub _validate_password ($plaintext) {
-  return 'Password must be at least 8 characters long'
-    if length($plaintext) < 8;
+  return 'Password must be at least 10 characters long'
+    if length($plaintext) < 10;
   return 'Password must contain at least one digit'
     if $plaintext !~ /\d/;
   return 'Password must contain at least one uppercase letter'
@@ -70,6 +70,12 @@ sub register ($self) {
     return $self->render(json => { success => \0, error => 'Invalid email address' }, status => 400);
   }
 
+  # Optional full_name: max 100 chars, no control characters
+  my $full_name = $json->{full_name} // '';
+  if ($full_name && length($full_name) > 100) {
+    return $self->render(json => { success => \0, error => 'full_name must be 100 characters or fewer' }, status => 400);
+  }
+
   # Password strength validation
   if (my $err = _validate_password($json->{password})) {
     return $self->render(json => { success => \0, error => $err }, status => 400);
@@ -78,7 +84,7 @@ sub register ($self) {
   my $stored_hash = _hash_password($json->{password});
 
   eval {
-    my $id = $self->users->add($json->{username}, $stored_hash, $json->{email});
+    my $id = $self->users->add($json->{username}, $stored_hash, $json->{email}, $full_name);
     if ($id) {
       $self->render(json => { success => \1, message => 'User registered successfully', id => $id }, status => 201);
     } else {
