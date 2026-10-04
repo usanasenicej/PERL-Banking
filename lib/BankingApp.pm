@@ -36,15 +36,16 @@ sub startup ($self) {
     $c->res->headers->header('X-Frame-Options'         => 'DENY');
     $c->res->headers->header('X-XSS-Protection'        => '1; mode=block');
     $c->res->headers->header('Referrer-Policy'          => 'no-referrer');
-    $c->res->headers->header('Content-Security-Policy' => "default-src 'self'");
+    $c->res->headers->header('Content-Security-Policy'         => "default-src 'self'");
+    $c->res->headers->header('Strict-Transport-Security'       => 'max-age=31536000; includeSubDomains');
   });
 
   # -------------------------------------------------------
   # Per-IP in-memory rate limiter (auth endpoints)
   # -------------------------------------------------------
   my %_rate_store;
-  my $RATE_LIMIT  = $config->{rate_limit} // 10;
-  my $RATE_WINDOW = 60;
+  my $RATE_LIMIT  = $config->{rate_limit}        // 10;
+  my $RATE_WINDOW = $config->{rate_limit_window}  // 60;
 
   $self->helper(check_rate_limit => sub ($c) {
     my $ip    = $c->tx->remote_address // '0.0.0.0';
