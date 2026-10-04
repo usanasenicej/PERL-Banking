@@ -11,13 +11,22 @@ sub apply ($self) {
     return $self->render(json => { success => false, error => 'Loan amount must be a positive number with up to 2 decimal places' }, status => 400);
   }
 
+  # Optional term_months: integer between 6 and 120
+  my $term_months = $req->{term_months};
+  if (defined $term_months) {
+    unless ($term_months =~ /^\d+$/ && $term_months >= 6 && $term_months <= 120) {
+      return $self->render(json => { success => false, error => 'term_months must be an integer between 6 and 120' }, status => 400);
+    }
+  }
+
   eval {
-    my $loan_id = $self->loans->apply_for_loan($user_id, $amount);
+    my $loan_id = $self->loans->apply_for_loan($user_id, $amount, $term_months);
     $self->render(json => {
       success       => true,
       message       => 'Loan application submitted for internal approval',
       loan_id       => $loan_id,
-      interest_rate => '5.5%'
+      interest_rate => '5.5%',
+      (defined $term_months ? (term_months => $term_months + 0) : ())
     }, status => 201);
   };
   if ($@) {
