@@ -6,13 +6,14 @@ has 'sqlite';
 
 # Configuration constants
 use constant {
-    DEFAULT_INTEREST_RATE => 5.50,
-    STATUS_PENDING        => 'pending',
-    MIN_LOAN_AMOUNT       => 100,
-    MAX_LOAN_AMOUNT       => 1_000_000,
+    DEFAULT_INTEREST_RATE =&gt; 5.50,
+    DEFAULT_TERM_MONTHS   =&gt; 12,
+    STATUS_PENDING        =&gt; 'pending',
+    MIN_LOAN_AMOUNT       =&gt; 100,
+    MAX_LOAN_AMOUNT       =&gt; 1_000_000,
 };
 
-sub apply_for_loan ($self, $user_id, $amount) {
+sub apply_for_loan ($self, $user_id, $amount, $term_months = DEFAULT_TERM_MONTHS) {
 
     croak "User ID is required"
         unless defined $user_id;
@@ -29,6 +30,7 @@ sub apply_for_loan ($self, $user_id, $amount) {
         user_id       => $user_id,
         amount        => $amount,
         interest_rate => DEFAULT_INTEREST_RATE,
+        term_months   => $term_months,
         status        => STATUS_PENDING,
     };
 
@@ -51,6 +53,20 @@ sub get_all_for_user ($self, $user_id) {
         { user_id => $user_id },
         { order_by => { -desc => 'created_at' } }
     )->hashes->to_array;
+}
+
+# Returns the number of active (non-repaid) loans for a given user.
+# Useful for credit checks before approving a new loan application.
+sub count_active ($self, $user_id) {
+    croak "User ID is required" unless defined $user_id;
+
+    my $db = $self->sqlite->db;
+    my $row = $db->select(
+        'loans',
+        [ \'COUNT(*) AS cnt' ],
+        { user_id => $user_id, status => { '!=' => 'repaid' } }
+    )->hash;
+    return $row->{cnt} // 0;
 }
 
 sub get_by_id_and_user ($self, $loan_id, $user_id) {
