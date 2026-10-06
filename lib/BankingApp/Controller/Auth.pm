@@ -137,6 +137,16 @@ sub update_profile ($self) {
 
   my $changed = 0;
 
+  # Update full_name if provided
+  if (exists $json->{full_name}) {
+    my $new_name = $json->{full_name} // '';
+    if (length($new_name) > 100) {
+      return $self->render(json => { success => \0, error => 'full_name must be 100 characters or fewer' }, status => 400);
+    }
+    $self->users->update_full_name($user_id, $new_name);
+    $changed++;
+  }
+
   # Update email if provided
   if (my $new_email = $json->{email}) {
     if ($new_email !~ /^[^@\s]+\@[^@\s]+\.[^@\s]+$/) {
@@ -173,6 +183,42 @@ sub update_profile ($self) {
   }
 
   $self->render(json => { success => \1, message => 'Profile updated successfully' });
+}
+
+# DELETE /api/auth/me — permanently remove the authenticated user's account
+sub delete_account ($self) {
+  my $user_id = $self->stash('user_id');
+  my $json    = $self->req->json || {};
+
+  # Require password confirmation before deletion
+  my $password = $json->{password};
+  unless ($password) {
+    return $self->render(json => { success => \0, error => 'password is required to delete your account' }, status => 400);
+  }
+
+  my $full = $self->sqlite->db->select('users', ['password_hash'], { id => $user_id })->hash;
+  unless ($full && _verify_password($full->{password_hash}, $password)) {
+    return $self->render(json => { success => \0, error => 'Incorrect password' }, status => 401);
+  }
+
+  # Block deletion if the user still has open (non-zero balance) accounts
+  my $open_accounts = $self->sqlite->db->query(
+    'SELECT COUNT(*) AS cnt FROM accounts WHERE user_id = ? AND balance > 0',
+    $user_id
+  )->hash->{cnt};
+
+  if ($open_accounts > 0) {
+    return $self->render(json => { success => \0, error => 'Cannot delete account while you have accounts with positive balances' }, status => 409);
+  }
+
+  eval {
+    $self->sqlite->db->delete('users', { id => $user_id });
+    $self->render(json => { success => \1, message => 'Account deleted successfully' });
+  };
+  if ($@) {
+    $self->app->log->error($@);
+    $self->render(json => { success => \0, error => 'Internal server error' }, status => 500);
+  }
 }
 
 1;

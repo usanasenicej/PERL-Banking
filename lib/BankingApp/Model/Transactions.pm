@@ -3,7 +3,7 @@ use Mojo::Base -base, -signatures;
 
 has 'sqlite';
 
-sub deposit ($self, $account_id, $amount) {
+sub deposit ($self, $account_id, $amount, $description = undef) {
   my $db = $self->sqlite->db;
   my $tx = $db->begin;
 
@@ -12,14 +12,15 @@ sub deposit ($self, $account_id, $amount) {
   my $tx_id = $db->insert('transactions', {
     to_account_id    => $account_id,
     amount           => $amount,
-    transaction_type => 'deposit'
+    transaction_type => 'deposit',
+    (defined $description ? (description => $description) : ()),
   })->last_insert_id;
 
   $tx->commit;
   return $tx_id;
 }
 
-sub withdraw ($self, $account_id, $amount) {
+sub withdraw ($self, $account_id, $amount, $description = undef) {
   my $db = $self->sqlite->db;
   my $tx = $db->begin;
 
@@ -37,7 +38,8 @@ sub withdraw ($self, $account_id, $amount) {
   my $tx_id = $db->insert('transactions', {
     from_account_id  => $account_id,
     amount           => $amount,
-    transaction_type => 'withdrawal'
+    transaction_type => 'withdrawal',
+    (defined $description ? (description => $description) : ()),
   })->last_insert_id;
 
   $tx->commit;

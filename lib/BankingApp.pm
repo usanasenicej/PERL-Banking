@@ -115,6 +115,7 @@ sub startup ($self) {
   # Profile routes (also rate-limited for the PATCH)
   $api->get('/auth/me')->to('Auth#me');
   $api->patch('/auth/me')->to('Auth#update_profile');
+  $api->delete('/auth/me')->to('Auth#delete_account');
 
   # Account routes
   $api->get('/accounts')->to('Account#list_accounts');

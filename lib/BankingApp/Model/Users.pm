@@ -31,10 +31,16 @@ sub update_email ($self, $user_id, $new_email) {
   return $db->update('users', { email => $new_email }, { id => $user_id })->rows;
 }
 
-# Change 4: Update password hash for a given user
+# Update password hash for a given user
 sub update_password ($self, $user_id, $new_hash) {
   my $db = $self->sqlite->db;
   return $db->update('users', { password_hash => $new_hash }, { id => $user_id })->rows;
+}
+
+# Update display name for a given user
+sub update_full_name ($self, $user_id, $new_name) {
+  my $db = $self->sqlite->db;
+  return $db->update('users', { full_name => $new_name }, { id => $user_id })->rows;
 }
 
 1;

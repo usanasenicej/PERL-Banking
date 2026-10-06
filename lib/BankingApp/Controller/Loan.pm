@@ -2,6 +2,11 @@ package BankingApp::Controller::Loan;
 use Mojo::Base 'Mojolicious::Controller', -signatures;
 use Mojo::JSON qw(true false);
 
+use constant {
+  MIN_LOAN_AMOUNT => 100,
+  MAX_LOAN_AMOUNT => 1_000_000,
+};
+
 sub apply ($self) {
   my $user_id = $self->stash('user_id');
   my $req     = $self->req->json;
@@ -9,6 +14,10 @@ sub apply ($self) {
 
   unless (defined $amount && $amount =~ /^\d+(?:\.\d{1,2})?$/ && $amount > 0) {
     return $self->render(json => { success => false, error => 'Loan amount must be a positive number with up to 2 decimal places' }, status => 400);
+  }
+
+  if ($amount < MIN_LOAN_AMOUNT || $amount > MAX_LOAN_AMOUNT) {
+    return $self->render(json => { success => false, error => 'Loan amount must be between ' . MIN_LOAN_AMOUNT . ' and ' . MAX_LOAN_AMOUNT }, status => 400);
   }
 
   # Optional term_months: integer between 6 and 120
