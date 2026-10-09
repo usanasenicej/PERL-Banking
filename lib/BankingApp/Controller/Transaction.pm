@@ -2,7 +2,7 @@ package BankingApp::Controller::Transaction;
 use Mojo::Base 'Mojolicious::Controller', -signatures;
 use Mojo::JSON qw(true false);
 
-use constant MAX_AMOUNT => 1_000_000;
+use constant MAX_AMOUNT => 10_000_000;
 
 # -------------------------------------------------------
 # Private helpers
@@ -41,7 +41,7 @@ sub deposit ($self) {
   my $description = $req->{description};  # optional free-text note
 
   unless ($acc_id && _valid_amount($amount)) {
-    return $self->render(json => { success => false, error => 'Invalid deposit parameters. Amount must be between 0.01 and 1,000,000 with up to 2 decimal places.' }, status => 400);
+    return $self->render(json => { success => false, error => 'Invalid deposit parameters. Amount must be between 0.01 and 10,000,000 with up to 2 decimal places.' }, status => 400);
   }
 
   _try($self, sub {
@@ -64,7 +64,7 @@ sub withdraw ($self) {
   my $description = $req->{description};  # optional free-text note
 
   unless ($acc_id && _valid_amount($amount)) {
-    return $self->render(json => { success => false, error => 'Invalid withdrawal parameters. Amount must be between 0.01 and 1,000,000 with up to 2 decimal places.' }, status => 400);
+    return $self->render(json => { success => false, error => 'Invalid withdrawal parameters. Amount must be between 0.01 and 10,000,000 with up to 2 decimal places.' }, status => 400);
   }
 
   _try($self, sub {
@@ -91,7 +91,7 @@ sub transfer ($self) {
   my $amount  = $req->{amount};
 
   unless ($from_id && $to_id && _valid_amount($amount)) {
-    return $self->render(json => { success => false, error => 'Invalid transfer parameters. Amount must be between 0.01 and 1,000,000 with up to 2 decimal places.' }, status => 400);
+    return $self->render(json => { success => false, error => 'Invalid transfer parameters. Amount must be between 0.01 and 10,000,000 with up to 2 decimal places.' }, status => 400);
   }
 
   if ($from_id == $to_id) {
