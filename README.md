@@ -38,3 +38,46 @@ Architected by **Usanase**.
 
 ```bash
 cpanm --installdeps .
+
+---
+
+## 🗺️ API Endpoints
+
+All protected routes require an `Authorization: Bearer <token>` header.
+
+### Auth (`/api/auth`)
+
+| Method | Path | Auth? | Description |
+|--------|------|-------|-------------|
+| `POST` | `/api/auth/register` | ❌ | Register a new user |
+| `POST` | `/api/auth/login` | ❌ | Login and receive a JWT token |
+| `GET` | `/api/auth/me` | ✅ | Get current user profile |
+| `PATCH` | `/api/auth/me` | ✅ | Update email, full name, or password |
+| `DELETE` | `/api/auth/me` | ✅ | Permanently delete your user account |
+
+### Accounts (`/api/accounts`)
+
+| Method | Path | Auth? | Description |
+|--------|------|-------|-------------|
+| `GET` | `/api/accounts` | ✅ | List all accounts for the current user |
+| `POST` | `/api/accounts` | ✅ | Create a new checking or savings account |
+| `GET` | `/api/accounts/:id` | ✅ | Get a specific account |
+| `DELETE` | `/api/accounts/:id` | ✅ | Delete an account (must have zero balance) |
+
+### Transactions (`/api/transactions`)
+
+| Method | Path | Auth? | Description |
+|--------|------|-------|-------------|
+| `POST` | `/api/transactions/deposit` | ✅ | Deposit funds into an account |
+| `POST` | `/api/transactions/withdraw` | ✅ | Withdraw funds from an account |
+| `POST` | `/api/transactions/transfer` | ✅ | Transfer funds between accounts (flat \$1.00 fee) |
+| `GET` | `/api/accounts/:id/history` | ✅ | Paginated transaction history |
+| `GET` | `/api/accounts/:id/summary` | ✅ | Total money in / money out summary |
+
+### Loans (`/api/loans`)
+
+| Method | Path | Auth? | Description |
+|--------|------|-------|-------------|
+| `POST` | `/api/loans` | ✅ | Apply for a loan |
+| `GET` | `/api/loans` | ✅ | List all loans for the current user |
+| `POST` | `/api/loans/:id/repay` | ✅ | Make a loan repayment |
