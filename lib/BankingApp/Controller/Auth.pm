@@ -38,8 +38,8 @@ sub _verify_password ($stored, $candidate) {
 # Validate a candidate plaintext password against the policy.
 # Returns an error string on failure, or undef on success.
 sub _validate_password ($plaintext) {
-  return 'Password must be at least 10 characters long'
-    if length($plaintext) < 10;
+  return 'Password must be at least 12 characters long'
+    if length($plaintext) < 12;
   return 'Password must contain at least one digit'
     if $plaintext !~ /\d/;
   return 'Password must contain at least one uppercase letter'
